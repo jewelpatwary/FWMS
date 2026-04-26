@@ -170,7 +170,7 @@ service cloud.firestore {
 
     match /clients/{clientId} {
       allow read: if isAuthenticated();
-      allow create, update: if isHR() && isValidClient(request.resource.data);
+      allow create, update: if isAuthenticated() && isValidClient(request.resource.data);
       allow delete: if isAdmin();
     }
 

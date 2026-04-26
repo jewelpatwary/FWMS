@@ -1,5 +1,5 @@
 {
-  "name": "Foreign Worker Management System (Malaysia)",
+  "name": "FWMS",
   "description": "A comprehensive system for managing foreign worker data, permits, passports, and company placements with dynamic custom columns and automated alerts.",
   "requestFramePermissions": [
     "camera",

@@ -70,7 +70,7 @@ export default function Layout({ profile }: LayoutProps) {
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 print:hidden">
         <div className="p-6">
-          <h1 className="text-xl font-bold text-indigo-600">FWMS Malaysia</h1>
+          <h1 className="text-xl font-bold text-indigo-600">FWMS</h1>
         </div>
         
         <nav className="flex-1 px-4 space-y-1">
@@ -127,7 +127,7 @@ export default function Layout({ profile }: LayoutProps) {
             <Menu className="w-5 h-5 text-slate-600 group-hover:text-indigo-600 transition-colors" />
           )}
         </button>
-        <h1 className="text-lg font-bold text-indigo-600">FWMS Malaysia</h1>
+        <h1 className="text-lg font-bold text-indigo-600">FWMS</h1>
       </div>
 
       {/* Mobile Menu Overlay */}
@@ -141,7 +141,7 @@ export default function Layout({ profile }: LayoutProps) {
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6">
-          <h1 className="text-xl font-bold text-indigo-600">FWMS Malaysia</h1>
+          <h1 className="text-xl font-bold text-indigo-600">FWMS</h1>
         </div>
         <nav className="px-4 space-y-1">
           {navItems.map((item) => {

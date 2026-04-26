@@ -73,8 +73,8 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-indigo-600 mb-2">FWMS Malaysia</h1>
-          <p className="text-slate-500">Foreign Worker Management System</p>
+          <h1 className="text-3xl font-bold text-indigo-600 mb-2">FWMS</h1>
+          <p className="text-slate-500 font-medium">Foreign Worker Management System</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

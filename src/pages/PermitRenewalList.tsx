@@ -86,12 +86,27 @@ const getPermitHighlight = (expiry: string) => {
 };
 
 export default function PermitRenewalList() {
+  const MONTHS = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' }
+  ];
+
   const { profile } = useOutletContext<{ profile: UserProfile | null }>();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [permitHolders, setPermitHolders] = useState<PermitHolder[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [selectedManagedBy, setSelectedManagedBy] = useState<string>('');
   const [selectedFomemaStatus, setSelectedFomemaStatus] = useState<string>('');
@@ -742,19 +757,10 @@ export default function PermitRenewalList() {
       const baseMatch = matchesSearch && matchesClient && matchesManagedBy && matchesFomema && matchesPlks;
 
       const expiryDate = parseDate(w.permitExpiry);
-      const filterDate = parseDate(selectedMonth ? `${selectedMonth}-01` : '');
-      if (!expiryDate || !filterDate) return baseMatch && !selectedMonth;
+      if (!expiryDate) return baseMatch && !selectedMonth;
 
-      try {
-        const start = startOfMonth(filterDate);
-        const end = endOfMonth(filterDate);
-        const matchesMainMonth = isWithinInterval(expiryDate, { start, end });
-
-        const matchesMonth = matchesMainMonth;
-        return baseMatch && matchesMonth;
-      } catch (e) {
-        return baseMatch;
-      }
+      const matchesMonth = !selectedMonth || (expiryDate.getMonth() + 1).toString().padStart(2, '0') === selectedMonth;
+      return baseMatch && matchesMonth;
     });
   }, [workers, searchTerm, selectedMonth, selectedClient, selectedManagedBy, selectedFomemaStatus, selectedPlksStatus]);
 
@@ -782,8 +788,9 @@ export default function PermitRenewalList() {
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
+      const monthLabel = MONTHS.find(m => m.value === selectedMonth)?.label || 'All';
       XLSX.utils.book_append_sheet(wb, ws, 'Permit Renewal List');
-      XLSX.writeFile(wb, `Permit_Renewal_List_${selectedMonth || 'All'}.xlsx`);
+      XLSX.writeFile(wb, `Permit_Renewal_List_${monthLabel}.xlsx`);
       toast.success('Exported to Excel successfully');
     } catch (error) {
       console.error('Export error:', error);
@@ -801,7 +808,8 @@ export default function PermitRenewalList() {
       doc.setFontSize(10);
       doc.text(`Generated on: ${formatDateTime(new Date().toISOString())}`, 14, 22);
       if (selectedMonth) {
-        doc.text(`Month: ${format(parseDate(`${selectedMonth}-01`)!, 'MMMM yyyy')}`, 14, 27);
+        const monthLabel = MONTHS.find(m => m.value === selectedMonth)?.label;
+        doc.text(`Month: ${monthLabel}`, 14, 27);
       }
 
       const tableData = filteredWorkers.map((w, index) => [
@@ -882,7 +890,8 @@ export default function PermitRenewalList() {
       doc.text('Approved By', 14 + sectionWidth * 3, finalY + 5);
       doc.text('(M. Director)', 14 + sectionWidth * 3, finalY + 10);
 
-      doc.save(`Permit_Renewal_List_${selectedMonth || 'All'}.pdf`);
+      const monthLabel = MONTHS.find(m => m.value === selectedMonth)?.label || 'All';
+      doc.save(`Permit_Renewal_List_${monthLabel}.pdf`);
       toast.success('Exported to PDF successfully');
     } catch (error) {
       console.error('PDF Export error:', error);
@@ -914,12 +923,16 @@ export default function PermitRenewalList() {
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <div className="relative flex-1 min-w-[150px]">
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="month" 
+            <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-xs"
-            />
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-xs appearance-none"
+            >
+              <option value="">All Months</option>
+              {MONTHS.map(month => (
+                <option key={month.value} value={month.value}>{month.label}</option>
+              ))}
+            </select>
           </div>
           <div className="relative flex-1 min-w-[150px]">
             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -1009,7 +1022,7 @@ export default function PermitRenewalList() {
       </div>
 
       {/* Worker Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-280px)]">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-240px)]">
         <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
           <table className="w-full text-left border-collapse border border-slate-200 min-w-max">
             <thead className="sticky top-0 z-20 shadow-sm">

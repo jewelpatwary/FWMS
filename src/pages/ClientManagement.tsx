@@ -13,7 +13,7 @@ import {
   Plus, 
   Search,
   Building2,
-  Eye,
+  Edit2,
   X
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -108,10 +108,10 @@ export default function ClientManagement() {
                     <div className="flex justify-center">
                       <button 
                         onClick={() => navigate(`/clients/${client.id}`)}
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
                       >
-                        <Eye className="w-3.5 h-3.5 mr-1.5" />
-                        Show
+                        <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+                        Edit
                       </button>
                     </div>
                   </td>

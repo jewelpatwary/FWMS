@@ -650,7 +650,7 @@ export default function WorkerManagement() {
       </div>
 
       {/* Worker Table */}
-      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-280px)]">
+      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-240px)]">
         <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
           <table className="w-full text-left border-collapse min-w-max">
             <thead className="sticky top-0 z-20 shadow-sm">
@@ -684,6 +684,7 @@ export default function WorkerManagement() {
                   { label: 'Nationality', key: 'nationality' },
                   { label: 'SOCSO NO', key: 'socsoNo' },
                   { label: 'EPF No.', key: 'epfNo' },
+                  { label: 'Status', key: 'status' },
                   { label: 'Remark', key: 'remark' }
                 ].map((col) => (
                   <th 
@@ -909,6 +910,16 @@ export default function WorkerManagement() {
                   <td className="p-2 border border-slate-200">
                     <select 
                       className="w-full px-2 py-1 text-[10px] border rounded outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
+                      value={columnFilters.status || ''}
+                      onChange={(e) => setColumnFilters(prev => ({ ...prev, status: e.target.value }))}
+                    >
+                      <option value="">All</option>
+                      {['Active', 'Inactive', 'Holiday'].map(val => <option key={val} value={val}>{val}</option>)}
+                    </select>
+                  </td>
+                  <td className="p-2 border border-slate-200">
+                    <select 
+                      className="w-full px-2 py-1 text-[10px] border rounded outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
                       value={columnFilters.remark || ''}
                       onChange={(e) => setColumnFilters(prev => ({ ...prev, remark: e.target.value }))}
                     >
@@ -971,6 +982,12 @@ export default function WorkerManagement() {
                   <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap border border-slate-200 text-center">{worker.nationality}</td>
                   <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap border border-slate-200 text-center">{worker.socsoNo || '-'}</td>
                   <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap border border-slate-200 text-center">{worker.epfNo || '-'}</td>
+                  <td className={`px-4 py-3 text-[13px] whitespace-nowrap border border-slate-200 text-center font-medium ${
+                    worker.status === 'Active' ? 'text-emerald-600' : 
+                    worker.status === 'Holiday' ? 'text-amber-600' : 'text-rose-600'
+                  }`}>
+                    {worker.status}
+                  </td>
                   <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap border border-slate-200 text-center">{worker.remark || '-'}</td>
                   <td className="px-4 py-3 text-right border border-slate-200 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
