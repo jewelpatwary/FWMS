@@ -6,6 +6,7 @@ import { doc, getDoc, setDoc, getDocFromServer, onSnapshot } from 'firebase/fire
 import { auth, db } from './firebase';
 import { UserProfile } from './types';
 import ErrorBoundary from './components/ErrorBoundary';
+import { Analytics } from '@vercel/analytics/react';
 
 // Pages (to be implemented)
 import Dashboard from './pages/Dashboard';
@@ -161,6 +162,7 @@ export default function App() {
           </Route>
         </Routes>
       </Router>
+      <Analytics />
     </ErrorBoundary>
   );
 }
