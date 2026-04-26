@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { auth, db } from './firebase';
 import { UserProfile } from './types';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -151,6 +152,7 @@ export default function App() {
           </Route>
         </Routes>
       </Router>
+      <SpeedInsights />
     </ErrorBoundary>
   );
 }
