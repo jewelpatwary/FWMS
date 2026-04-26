@@ -157,9 +157,13 @@ export default function WorkerManagement() {
   const [showFilters, setShowFilters] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedWorkers, setSelectedWorkers] = useState<Set<string>>(new Set());
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showExportMenu, setShowExportMenu] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'fullName', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'workerId', direction: 'asc' });
   const navigate = useNavigate();
 
   const handleSort = (key: string) => {
@@ -299,15 +303,18 @@ export default function WorkerManagement() {
         'Passport Expiry': '2028-12-31',
         'Permit Expiry': '2025-06-30',
         'eSP Expiry': '2025-07-30',
-        'Permit Year': '2nd Year',
+        'Permit Year': '1st Year',
+        'Permit Holder': '',
         'Managed By': 'FWMS Admin',
+        'Current Client': '',
+        'Join Date': '2024-01-15',
+        'Termination Date': '',
         'DOB': '1990-01-01',
         'Gender': 'Male',
         'Nationality': 'Bangladesh',
-        'SOCSO No': '1234567890',
-        'EPF No': 'EPF-98765',
+        'SOCSO NO': '',
+        'EPF No.': '',
         'Remark': 'Good worker',
-        'Join Date': '2024-01-15',
         'Work Location': 'Kuala Lumpur'
       }
     ];
@@ -418,6 +425,12 @@ export default function WorkerManagement() {
           bVal = (b[key as keyof Worker] || '').toString();
         }
 
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          return sortConfig.direction === 'asc' 
+            ? aVal.localeCompare(bVal, undefined, { numeric: true })
+            : bVal.localeCompare(aVal, undefined, { numeric: true });
+        }
+
         if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
@@ -426,6 +439,46 @@ export default function WorkerManagement() {
 
     return result;
   }, [workers, searchTerm, columnFilters, clients, permitHolders, sortConfig]);
+
+  const toggleSelectAll = () => {
+    if (selectedWorkers.size === filteredWorkers.length) {
+      setSelectedWorkers(new Set());
+    } else {
+      setSelectedWorkers(new Set(filteredWorkers.map(w => w.id)));
+    }
+  };
+
+  const toggleSelectWorker = (id: string) => {
+    const newSelected = new Set(selectedWorkers);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedWorkers(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (confirmText !== 'DELETE') {
+      toast.error('Please type DELETE to confirm');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const deletePromises = Array.from(selectedWorkers).map(id => deleteDoc(doc(db, 'workers', id)));
+      await Promise.all(deletePromises);
+      toast.success(`Successfully deleted ${selectedWorkers.size} workers`);
+      setSelectedWorkers(new Set());
+      setShowBulkDeleteModal(false);
+      setConfirmText('');
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      toast.error('Failed to delete some workers');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleBulkUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -446,6 +499,14 @@ export default function WorkerManagement() {
 
       try {
         for (const row of data as any[]) {
+          // Find matching permit holder by name if provided
+          const holderName = row['Permit Holder'] || '';
+          const holder = permitHolders.find(h => h.name.toLowerCase() === holderName.toLowerCase());
+          
+          // Find matching client by name if provided
+          const clientName = row['Current Client'] || row.Client || row.CurrentClient || '';
+          const client = clients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+          
           await addDoc(collection(db, 'workers'), {
             workerId: row['Worker ID'] || row.WorkerID || `W-${Math.floor(Math.random() * 10000)}`,
             fullName: row['Full Name'] || row.FullName || 'Unknown',
@@ -454,17 +515,19 @@ export default function WorkerManagement() {
             passportExpiry: processDate(row['Passport Expiry'] || row.PassportExpiry),
             permitExpiry: processDate(row['Permit Expiry'] || row.PermitExpiry),
             espExpiry: processDate(row['eSP Expiry'] || row.eSPExpiry),
-            permitYear: row['Permit Year'] || row.PermitYear || '',
+            permitYear: (row['Permit Year'] || row.PermitYear || '').toString(),
+            permitHolder: holder ? holder.id : '',
             managedBy: row['Managed By'] || row.ManagedBy || '',
             dob: processDate(row['DOB'] || row.DOB),
             gender: row['Gender'] || row.Gender || '',
             nationality: row['Nationality'] || row.Nationality || '',
-            socsoNo: row['SOCSO No'] || row.SOCSONo || '',
-            epfNo: row['EPF No'] || row.EPFNo || '',
+            socsoNo: row['SOCSO No'] || row['SOCSO NO'] || row.SOCSONo || '',
+            epfNo: row['EPF No'] || row['EPF No.'] || row.EPFNo || '',
             remark: row['Remark'] || row.Remark || '',
-            clientId: '',
+            clientId: client ? client.id : '',
             workLocation: row['Work Location'] || row.Location || '',
-            joinDate: processDate(row['Join Date'] || row.JoinDate) || new Date().toISOString().split('T')[0],
+            currentClientJoinDate: processDate(row['Join Date'] || row.JoinDate) || new Date().toISOString().split('T')[0],
+            currentClientTerminationDate: processDate(row['Termination Date'] || row.TerminationDate),
             status: 'Active',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -498,6 +561,15 @@ export default function WorkerManagement() {
           <p className="text-slate-500 text-sm">Manage worker records and custom data</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {selectedWorkers.size > 0 && (
+            <button 
+              onClick={() => setShowBulkDeleteModal(true)}
+              className="bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-rose-700 shadow-sm transition-all flex items-center"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Selected ({selectedWorkers.size})
+            </button>
+          )}
           <label className="cursor-pointer bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all flex items-center">
             <Upload className="w-4 h-4 mr-2" />
             Bulk Upload
@@ -578,11 +650,19 @@ export default function WorkerManagement() {
       </div>
 
       {/* Worker Table */}
-      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
+      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-280px)]">
+        <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <table className="w-full text-left border-collapse min-w-max">
+            <thead className="sticky top-0 z-20 shadow-sm">
               <tr className="bg-indigo-600 border-b border-indigo-700">
+                <th className="px-4 py-3 border border-indigo-500 text-center">
+                  <input 
+                    type="checkbox"
+                    checked={filteredWorkers.length > 0 && selectedWorkers.size === filteredWorkers.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                </th>
                 {[
                   { label: 'Worker ID', key: 'workerId' },
                   { label: 'Worker Name', key: 'fullName' },
@@ -625,6 +705,7 @@ export default function WorkerManagement() {
               </tr>
               {showFilters && (
                 <tr className="bg-slate-50 border-b border-slate-200">
+                  <td className="p-2 border border-slate-200 bg-slate-100"></td>
                   <td className="p-2 border border-slate-200">
                     <select 
                       className="w-full px-2 py-1 text-[10px] border rounded outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
@@ -850,9 +931,17 @@ export default function WorkerManagement() {
               {filteredWorkers.map((worker) => (
                 <tr 
                   key={worker.id} 
-                  className="hover:bg-slate-50 transition-colors group"
+                  className={`hover:bg-slate-50 transition-colors group ${selectedWorkers.has(worker.id) ? 'bg-indigo-50/50' : ''}`}
                 >
-                  <td className="px-4 py-3 text-[13px] font-medium text-slate-900 whitespace-nowrap border border-slate-200 text-center">{worker.workerId}</td>
+                  <td className="px-4 py-3 border border-slate-200 text-center">
+                    <input 
+                      type="checkbox"
+                      checked={selectedWorkers.has(worker.id)}
+                      onChange={() => toggleSelectWorker(worker.id)}
+                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-[13px] font-medium text-slate-900 whitespace-nowrap border border-slate-200 text-center font-mono">{worker.workerId}</td>
                   <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap border border-slate-200 text-left">{worker.fullName}</td>
                   <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap border border-slate-200 text-center">{worker.oldPassport || '-'}</td>
                   <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap border border-slate-200 text-center">{worker.newPassport || '-'}</td>
@@ -915,6 +1004,67 @@ export default function WorkerManagement() {
       {/* Modals (Simplified for brevity, would be full components) */}
       {isAddModalOpen && <AddWorkerModal clients={clients} permitHolders={permitHolders} onClose={() => setIsAddModalOpen(false)} />}
       
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mb-4">
+                <Trash2 className="w-6 h-6 text-rose-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Double Verification Required</h3>
+              <p className="text-slate-500 mb-6">
+                You are about to delete <span className="font-bold text-slate-900">{selectedWorkers.size} workers</span>. 
+                This action is irreversible and will remove all associated data.
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    To confirm, please type <span className="font-bold text-rose-600">DELETE</span> below:
+                  </label>
+                  <input 
+                    type="text"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder="Type DELETE here"
+                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-sm"
+                    autoFocus
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-slate-50 px-6 py-4 flex items-center justify-end gap-3">
+              <button 
+                onClick={() => {
+                  setShowBulkDeleteModal(false);
+                  setConfirmText('');
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBulkDelete}
+                disabled={confirmText !== 'DELETE' || isDeleting}
+                className="px-6 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-all shadow-sm flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Confirm Final Deletion'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteId && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[70] p-4">

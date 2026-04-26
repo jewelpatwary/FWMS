@@ -93,8 +93,8 @@ export default function PaymentApprovals() {
       updates.plksPaymentApproved = true;
       updates.plksPaymentApprovedBy = profile.displayName;
       updates.plksPaymentApprovedAt = new Date().toISOString();
-      updates.plksPayment = 'Payment Approved';
-      updates.plksStatus = 'Pending payment';
+      updates.plksPayment = 'Payment Done';
+      updates.plksStatus = 'Payment Done';
     }
 
     try {
@@ -534,10 +534,10 @@ export default function PaymentApprovals() {
       </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse border border-slate-200">
-            <thead>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-280px)]">
+        <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <table className="w-full text-left border-collapse border border-slate-200 min-w-max">
+            <thead className="sticky top-0 z-20 shadow-sm">
               <tr className="bg-indigo-600 border-b border-indigo-700">
                 <th className="px-4 py-3 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap border border-indigo-500 text-center">SL No.</th>
                 <th className="px-4 py-3 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap border border-indigo-500 text-left">Worker Name</th>

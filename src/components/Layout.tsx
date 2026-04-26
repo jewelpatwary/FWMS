@@ -14,7 +14,7 @@ import {
   Settings,
   CreditCard
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { UserProfile } from '../types';
 import { clsx, type ClassValue } from 'clsx';
@@ -32,6 +32,13 @@ export default function Layout({ profile }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (profile?.appearance) {
+      document.documentElement.style.setProperty('--app-font-size', profile.appearance.fontSize);
+      document.documentElement.style.setProperty('--app-font-family', profile.appearance.fontFamily);
+    }
+  }, [profile]);
 
   const handleLogout = async () => {
     await auth.signOut();

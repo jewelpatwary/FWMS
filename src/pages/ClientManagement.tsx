@@ -91,10 +91,10 @@ export default function ClientManagement() {
       </div>
 
       {/* Client List */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse border border-slate-200">
-            <thead>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-280px)]">
+        <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <table className="w-full text-left border-collapse border border-slate-200 min-w-max">
+            <thead className="sticky top-0 z-20 shadow-sm">
               <tr className="bg-indigo-600 border-b border-indigo-700">
                 <th className="px-6 py-3 text-xs font-bold text-white uppercase tracking-wider border border-indigo-500 text-center whitespace-nowrap">Client Name</th>
                 <th className="px-6 py-3 text-xs font-bold text-white uppercase tracking-wider border border-indigo-500 text-center whitespace-nowrap">Actions</th>

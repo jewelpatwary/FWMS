@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
+import { doc, getDoc, setDoc, getDocFromServer, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { UserProfile } from './types';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -48,67 +48,76 @@ export default function App() {
     };
     testConnection();
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubProfile: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Clean up previous profile listener if it exists
+      if (unsubProfile) {
+        unsubProfile();
+        unsubProfile = null;
+      }
+
       try {
         if (firebaseUser) {
           setUser(firebaseUser);
           const docRef = doc(db, 'users', firebaseUser.uid);
           
-          let docSnap;
-          try {
-            docSnap = await getDoc(docRef);
-          } catch (e) {
-            console.error('Error in getDoc:', e);
-            throw e;
-          }
-
-          if (docSnap.exists()) {
-            setProfile(docSnap.data() as UserProfile);
-          } else {
-            const email = firebaseUser.email || '';
-            const isSuperAdmin = email === 'jewelpatwary1994@gmail.com' || email === 'superadmin@fwms.com';
-            
-            const newProfile: UserProfile = {
-              uid: firebaseUser.uid,
-              email: email,
-              displayName: firebaseUser.displayName || (isSuperAdmin ? 'Super Admin' : 'User'),
-              role: isSuperAdmin ? 'super_admin' : 'viewer',
-              createdAt: new Date().toISOString(),
-            };
-
-            if (isSuperAdmin) {
-              newProfile.permissions = {
-                canManageWorkers: true,
-                canManageClients: true,
-                canManagePermitHolders: true,
-                canManageESP: true,
-                canManageCOM: true,
-                canViewReports: true,
-                canApprovePayments: true,
+          // Use onSnapshot for real-time profile updates (sync appearance, settings, etc)
+          unsubProfile = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+              setProfile(docSnap.data() as UserProfile);
+            } else {
+              // Create default profile if it doesn't exist
+              const email = firebaseUser.email || '';
+              const isSuperAdmin = email === 'jewelpatwary1994@gmail.com' || email === 'superadmin@fwms.com';
+              
+              const newProfile: UserProfile = {
+                uid: firebaseUser.uid,
+                email: email,
+                displayName: firebaseUser.displayName || (isSuperAdmin ? 'Super Admin' : 'User'),
+                role: isSuperAdmin ? 'super_admin' : 'viewer',
+                createdAt: new Date().toISOString(),
               };
-            }
 
-            try {
-              await setDoc(docRef, newProfile);
-            } catch (e) {
-              console.error('Error in setDoc:', e);
-              throw e;
+              if (isSuperAdmin) {
+                newProfile.permissions = {
+                  canManageWorkers: true,
+                  canManageClients: true,
+                  canManagePermitHolders: true,
+                  canManageESP: true,
+                  canManageCOM: true,
+                  canViewReports: true,
+                  canApprovePayments: true,
+                };
+              }
+
+              setDoc(docRef, newProfile).catch(e => console.error('Error creating profile:', e));
+              setProfile(newProfile);
             }
-            setProfile(newProfile);
-          }
+            setIsAuthReady(true);
+            setLoading(false);
+          }, (error) => {
+            console.error('Profile snapshot error:', error);
+            setIsAuthReady(true);
+            setLoading(false);
+          });
         } else {
           setUser(null);
           setProfile(null);
+          setIsAuthReady(true);
+          setLoading(false);
         }
       } catch (error) {
         console.error('Auth state change error:', error);
-      } finally {
         setIsAuthReady(true);
         setLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubProfile) unsubProfile();
+    };
   }, []);
 
   if (loading || !isAuthReady) {
@@ -146,6 +155,7 @@ export default function App() {
             <Route path="/payment-history" element={<PaymentHistory />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings/signature" element={<Settings view="signature" />} />
+            <Route path="/settings/appearance" element={<Settings view="appearance" />} />
             <Route path="/settings/global" element={<Settings view="global" />} />
             <Route path="/settings/backup" element={<Settings view="backup" />} />
           </Route>

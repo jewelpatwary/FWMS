@@ -130,6 +130,66 @@ export default function PermitRenewalList() {
     const unsubWorkers = onSnapshot(q, (snap) => {
       const workerList = snap.docs.map(d => ({ id: d.id, ...d.data() } as Worker));
       setWorkers(workerList);
+      
+      // Auto-reset workers who have entered their next renewal cycle (within 90 days of NEW expiry)
+      workerList.forEach(w => {
+        // If status is 'Collected' and we are now in the 90-day window of the NEW expiry date,
+        // it means we are ready to start the NEXT renewal cycle.
+        if (w.plksStatus === 'Collected' && isWorkerInRenewalWindow(w)) {
+          const resetData: any = {
+            acknowledgement: '',
+            fomemaPayment: '-',
+            fomemaStatus: '-',
+            fomemaPaymentApproved: false,
+            fomemaPaymentApprovedBy: '',
+            fomemaPaymentApprovedAt: '',
+            fomemaPaymentRequestedBy: '',
+            fomemaPaymentRequestedAt: '',
+            fomemaReRequestReason: '',
+            fomemaRefundRequestedBy: '',
+            fomemaRefundRequestedAt: '',
+            fomemaRefundReason: '',
+            fomemaRefundApproved: false,
+            fomemaRefundApprovedBy: '',
+            fomemaRefundApprovedAt: '',
+
+            insurancePurchase: '',
+            insurancePayment: '',
+            insurancePaymentApproved: false,
+            insurancePaymentApprovedBy: '',
+            insurancePaymentApprovedAt: '',
+            insurancePaymentRequestedBy: '',
+            insurancePaymentRequestedAt: '',
+            insuranceRefundRequestedBy: '',
+            insuranceRefundRequestedAt: '',
+            insuranceRefundReason: '',
+            insuranceRefundApproved: false,
+            insuranceRefundApprovedBy: '',
+            insuranceRefundApprovedAt: '',
+
+            plksStatus: '',
+            plksPayment: '-',
+            plksPaymentApproved: false,
+            plksPaymentApprovedBy: '',
+            plksPaymentApprovedAt: '',
+            plksPaymentRequestedBy: '',
+            plksPaymentRequestedAt: '',
+            plksRefundRequestedBy: '',
+            plksRefundRequestedAt: '',
+            plksRefundReason: '',
+            plksRefundApproved: false,
+            plksRefundApprovedBy: '',
+            plksRefundApprovedAt: '',
+
+            comApply: '',
+            comStatus: '',
+            comRequestDate: '',
+            updatedAt: new Date().toISOString()
+          };
+          updateDoc(doc(db, 'workers', w.id), resetData).catch(console.error);
+        }
+      });
+
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'workers');
@@ -264,7 +324,8 @@ export default function PermitRenewalList() {
 
   const updateWorkerField = async (worker: Worker, field: string, value: string) => {
     // Check if worker is within renewal window (90 days)
-    if (!isWorkerInRenewalWindow(worker)) {
+    // Allow 'Collected' workers to be edited even if expiry is moved forward
+    if (!isWorkerInRenewalWindow(worker) && worker.plksStatus !== 'Collected') {
       toast.error('Updates are only permitted within 90 days of permit expiry');
       return;
     }
@@ -289,7 +350,7 @@ export default function PermitRenewalList() {
         toast.error('Acknowledgement must be "Agree" to update Purchase Insurance');
         return;
       }
-      if (worker.fomemaStatus !== 'Suitable' && worker.plksStatus !== 'Applied') {
+      if (worker.fomemaStatus !== 'Suitable' && !['Applied', 'Application Approved', 'Payment Request', 'Pending payment', 'Payment Done', 'Collected'].includes(worker.plksStatus as string) && !worker.plksPaymentApproved) {
         toast.error('Fomema Status must be "Suitable" or PLKS Status must be "Applied" to update Purchase Insurance');
         return;
       }
@@ -299,7 +360,7 @@ export default function PermitRenewalList() {
         toast.error('Acknowledgement must be "Agree" to update Insurance Payment');
         return;
       }
-      if (worker.fomemaStatus !== 'Suitable' && worker.plksStatus !== 'Applied') {
+      if (worker.fomemaStatus !== 'Suitable' && !['Applied', 'Application Approved', 'Payment Request', 'Pending payment', 'Payment Done', 'Collected'].includes(worker.plksStatus as string) && !worker.plksPaymentApproved) {
         toast.error('Fomema Status must be "Suitable" or PLKS Status must be "Applied" to update Insurance Payment');
         return;
       }
@@ -313,7 +374,7 @@ export default function PermitRenewalList() {
         toast.error('Acknowledgement must be "Agree" to update PLKS Status');
         return;
       }
-      if (worker.fomemaStatus !== 'Suitable' && worker.plksStatus !== 'Applied' && value !== 'Applied') {
+      if (worker.fomemaStatus !== 'Suitable' && !['Applied', 'Application Approved', 'Payment Request', 'Pending payment', 'Payment Done', 'Collected'].includes(worker.plksStatus as string) && !worker.plksPaymentApproved && value !== 'Applied') {
         toast.error('Fomema Status must be "Suitable" to update PLKS Status');
         return;
       }
@@ -323,7 +384,7 @@ export default function PermitRenewalList() {
         toast.error('Acknowledgement must be "Agree" to update PLKS Payment');
         return;
       }
-      if (worker.fomemaStatus !== 'Suitable' && worker.plksStatus !== 'Applied') {
+      if (worker.fomemaStatus !== 'Suitable' && !['Applied', 'Application Approved', 'Payment Request', 'Pending payment', 'Payment Done', 'Collected'].includes(worker.plksStatus as string) && !worker.plksPaymentApproved) {
         toast.error('Fomema Status must be "Suitable" or PLKS Status must be "Applied" to update PLKS Payment');
         return;
       }
@@ -459,6 +520,35 @@ export default function PermitRenewalList() {
       }
       const currentYear = parseInt(worker.permitYear || '0');
       updates.permitYear = (currentYear + 1).toString();
+
+      // Reset fields for the next renewal cycle
+      updates.acknowledgement = '';
+      updates.fomemaStatus = '-';
+      updates.fomemaPayment = '-';
+      updates.fomemaPaymentApproved = false;
+      updates.fomemaPaymentApprovedBy = '';
+      updates.fomemaPaymentApprovedAt = '';
+      updates.fomemaPaymentRequestedBy = '';
+      updates.fomemaPaymentRequestedAt = '';
+      
+      updates.insurancePurchase = '';
+      updates.insurancePayment = '';
+      updates.insurancePaymentApproved = false;
+      updates.insurancePaymentApprovedBy = '';
+      updates.insurancePaymentApprovedAt = '';
+      updates.insurancePaymentRequestedBy = '';
+      updates.insurancePaymentRequestedAt = '';
+      
+      updates.plksPayment = '-';
+      updates.plksPaymentApproved = false;
+      updates.plksPaymentApprovedBy = '';
+      updates.plksPaymentApprovedAt = '';
+      updates.plksPaymentRequestedBy = '';
+      updates.plksPaymentRequestedAt = '';
+      
+      updates.comApply = '';
+      updates.comStatus = '';
+      updates.comRequestDate = '';
     }
 
     try {
@@ -658,8 +748,9 @@ export default function PermitRenewalList() {
       try {
         const start = startOfMonth(filterDate);
         const end = endOfMonth(filterDate);
+        const matchesMainMonth = isWithinInterval(expiryDate, { start, end });
 
-        const matchesMonth = isWithinInterval(expiryDate, { start, end });
+        const matchesMonth = matchesMainMonth;
         return baseMatch && matchesMonth;
       } catch (e) {
         return baseMatch;
@@ -918,10 +1009,10 @@ export default function PermitRenewalList() {
       </div>
 
       {/* Worker Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse border border-slate-200">
-            <thead>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-280px)]">
+        <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <table className="w-full text-left border-collapse border border-slate-200 min-w-max">
+            <thead className="sticky top-0 z-20 shadow-sm">
               <tr className="bg-indigo-600 border-b border-indigo-700">
                 <th className="px-4 py-3 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap border border-indigo-500 text-center">SL No.</th>
                 <th className="px-4 py-3 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap border border-indigo-500 text-left">Worker Name</th>
@@ -1085,32 +1176,41 @@ export default function PermitRenewalList() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-[13px] text-slate-600 border border-slate-200 text-center min-w-[120px]">
-                    {worker.acknowledgement === 'Agree' && (worker.fomemaStatus === 'Suitable' || worker.plksStatus === 'Applied') && isWorkerInRenewalWindow(worker) ? (
+                    {worker.acknowledgement === 'Agree' && (worker.fomemaStatus === 'Suitable' || worker.plksStatus === 'Applied' || worker.plksPaymentApproved) && isWorkerInRenewalWindow(worker) ? (
                       <div className="flex flex-col items-center">
                         <select
-                          value={worker.plksStatus || ''}
+                          value={worker.plksPaymentApproved && worker.plksStatus !== 'Collected' ? 'Payment Done' : (worker.plksStatus || '')}
                           onChange={(e) => updateWorkerField(worker, 'plksStatus', e.target.value)}
-                          disabled={(worker.plksStatus === 'Application Approved' && worker.plksPayment !== 'Payment Done') || (worker.plksStatus === 'Refund' && !worker.plksRefundApproved) || !!worker.plksPayment}
-                          className={`bg-transparent border-none focus:ring-0 text-[13px] text-slate-600 cursor-pointer hover:bg-slate-50 rounded px-1 w-full text-center ${ ((worker.plksStatus === 'Application Approved' && worker.plksPayment !== 'Payment Done') || (worker.plksStatus === 'Refund' && !worker.plksRefundApproved) || !!worker.plksPayment) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          disabled={(!worker.plksPaymentApproved && !!worker.plksPayment) || (worker.plksStatus === 'Refund' && !worker.plksRefundApproved)}
+                          className={`bg-transparent border-none focus:ring-0 text-[13px] text-slate-600 cursor-pointer hover:bg-slate-50 rounded px-1 w-full text-center ${ ((!worker.plksPaymentApproved && !!worker.plksPayment) || (worker.plksStatus === 'Refund' && !worker.plksRefundApproved)) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                          <option value="">Select</option>
-                          <option value="Eligible">Eligible</option>
-                          <option value="Non Eligible">Non Eligible</option>
-                          <option value="Applied">Applied</option>
-                          <option value="Application Approved">Application Approved</option>
-                          {worker.plksStatus === 'Payment Request' && (
-                            <option value="Payment Request" disabled>Payment Request</option>
+                          {worker.plksPaymentApproved ? (
+                            <>
+                              <option value="Payment Done" disabled={worker.plksStatus === 'Collected'}>Payment Done</option>
+                              <option value="Collected">Collected</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="">Select</option>
+                              <option value="Eligible">Eligible</option>
+                              <option value="Non Eligible">Non Eligible</option>
+                              <option value="Applied">Applied</option>
+                              <option value="Application Approved">Application Approved</option>
+                              {worker.plksStatus === 'Payment Request' && (
+                                <option value="Payment Request" disabled>Payment Request</option>
+                              )}
+                              {worker.plksStatus === 'Payment Re-Request' && (
+                                <option value="Payment Re-Request" disabled>Payment Re-Request</option>
+                              )}
+                              {worker.plksStatus === 'Pending payment' && (
+                                <option value="Pending payment" disabled>Pending payment</option>
+                              )}
+                              {worker.plksStatus === 'Payment Done' && (
+                                <option value="Payment Done" disabled>Payment Done</option>
+                              )}
+                              <option value="Collected">Collected</option>
+                            </>
                           )}
-                          {worker.plksStatus === 'Payment Re-Request' && (
-                            <option value="Payment Re-Request" disabled>Payment Re-Request</option>
-                          )}
-                          {worker.plksStatus === 'Pending payment' && (
-                            <option value="Pending payment" disabled>Pending payment</option>
-                          )}
-                          {worker.plksStatus === 'Payment Done' && (
-                            <option value="Payment Done" disabled>Payment Done</option>
-                          )}
-                          <option value="Collected">Collected</option>
                         </select>
                         {(worker.plksStatus === 'Refund' || worker.plksPayment === 'Refund') && !worker.plksRefundApproved && (
                           <div className="mt-1 flex flex-col items-center gap-1">
@@ -1125,13 +1225,13 @@ export default function PermitRenewalList() {
 
                   {/* PLKS Payment Column */}
                   <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap border border-slate-200 text-center bg-emerald-50/30">
-                    {worker.acknowledgement === 'Agree' && (worker.fomemaStatus === 'Suitable' || worker.plksStatus === 'Applied') && isWorkerInRenewalWindow(worker) ? (
+                    {worker.acknowledgement === 'Agree' && (worker.fomemaStatus === 'Suitable' || worker.plksStatus === 'Applied' || worker.plksStatus === 'Payment Done' || worker.plksStatus === 'Collected' || worker.plksPaymentApproved) && (isWorkerInRenewalWindow(worker) || worker.plksStatus === 'Collected') ? (
                       <div className="flex flex-col items-center">
                         <select
-                          value={worker.plksPayment || ''}
+                          value={worker.plksPaymentApproved ? 'Payment Done' : (worker.plksPayment || '')}
                           onChange={(e) => updateWorkerField(worker, 'plksPayment', e.target.value)}
-                          disabled={!['Application Approved', 'Applied', 'Payment Request', 'Payment Re-Request', 'Pending payment', 'Payment Done', 'Refund', 'Collected'].includes(worker.plksStatus) || (worker.plksPayment === 'Refund' && !worker.plksRefundApproved)}
-                          className={`bg-transparent border-none focus:ring-0 text-[13px] text-slate-600 cursor-pointer hover:bg-slate-50 rounded px-1 w-full text-center ${!['Application Approved', 'Applied', 'Payment Request', 'Payment Re-Request', 'Pending payment', 'Payment Done', 'Refund', 'Collected'].includes(worker.plksStatus) || (worker.plksPayment === 'Refund' && !worker.plksRefundApproved) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          disabled={!['Application Approved', 'Applied', 'Payment Request', 'Payment Re-Request', 'Pending payment', 'Payment Done', 'Refund', 'Collected'].includes(worker.plksStatus as string) || (worker.plksPayment === 'Refund' && !worker.plksRefundApproved) || worker.plksPaymentApproved}
+                          className={`bg-transparent border-none focus:ring-0 text-[13px] text-slate-600 cursor-pointer hover:bg-slate-50 rounded px-1 w-full text-center ${!['Application Approved', 'Applied', 'Payment Request', 'Payment Re-Request', 'Pending payment', 'Payment Done', 'Refund', 'Collected'].includes(worker.plksStatus as string) || (worker.plksPayment === 'Refund' && !worker.plksRefundApproved) || worker.plksPaymentApproved ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <option value="">Select</option>
                           <option value="Payment Request" disabled={worker.plksPaymentApproved || (worker.plksRefundApproved && profile?.role !== 'super_admin')}>Payment Request</option>
@@ -1139,14 +1239,12 @@ export default function PermitRenewalList() {
                           {(profile?.role === 'super_admin' || profile?.permissions?.canApprovePayments || worker.plksPaymentApproved) && (
                             <>
                               <option value="Payment Done">Payment Done</option>
-                              <option value="Payment Approved">Payment Approved</option>
                             </>
                           )}
                           <option value="Refund" disabled={worker.plksPaymentApproved && profile?.role !== 'super_admin'}>Refund</option>
                         </select>
                         {profile?.role === 'super_admin' && worker.plksPaymentApproved && (
                           <div className="mt-1 flex flex-col items-center gap-1">
-                            <div className="text-[9px] text-emerald-600 font-bold uppercase">Payment Approved</div>
                             <button 
                               onClick={() => updateWorkerField(worker, 'plksPayment', 'Refund')}
                               className="text-[8px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded hover:bg-rose-200 font-bold"
@@ -1162,12 +1260,12 @@ export default function PermitRenewalList() {
                   </td>
 
                   <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap border border-slate-200 text-center">
-                    {worker.acknowledgement === 'Agree' && (worker.fomemaStatus === 'Suitable' || worker.plksStatus === 'Applied') && isWorkerInRenewalWindow(worker) ? (
+                    {(worker.acknowledgement === 'Agree' && (worker.fomemaStatus === 'Suitable' || ['Applied', 'Application Approved', 'Payment Request', 'Pending payment', 'Payment Done', 'Collected'].includes(worker.plksStatus as string) || worker.plksPaymentApproved) && (isWorkerInRenewalWindow(worker) || worker.plksStatus === 'Collected')) ? (
                       <div className="flex flex-col items-center">
                         <select
                           value={worker.insurancePurchase || ''}
                           onChange={(e) => updateWorkerField(worker, 'insurancePurchase', e.target.value)}
-                          disabled={(worker.insurancePaymentApproved && (worker.insurancePurchase as string) !== 'Refund') || (worker.fomemaStatus !== 'Suitable' && worker.plksStatus !== 'Applied') || (worker.insurancePurchase === 'Refund' && !worker.insuranceRefundApproved)}
+                          disabled={(worker.insurancePaymentApproved && (worker.insurancePurchase as string) !== 'Refund') || (worker.fomemaStatus !== 'Suitable' && !['Applied', 'Application Approved', 'Payment Request', 'Pending payment', 'Payment Done', 'Collected'].includes(worker.plksStatus as string) && !worker.plksPaymentApproved) || (worker.insurancePurchase === 'Refund' && !worker.insuranceRefundApproved)}
                           className={`bg-transparent border-none focus:ring-0 text-[13px] text-slate-600 cursor-pointer hover:bg-slate-50 rounded px-1 w-full text-center ${worker.insurancePaymentApproved || (worker.insurancePurchase === 'Refund' && !worker.insuranceRefundApproved) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <option value="">Select</option>
@@ -1187,12 +1285,12 @@ export default function PermitRenewalList() {
 
                   {/* Insurance Payment Column */}
                   <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap border border-slate-200 text-center bg-indigo-50/30">
-                    {worker.acknowledgement === 'Agree' && (worker.fomemaStatus === 'Suitable' || worker.plksStatus === 'Applied') && worker.insurancePurchase === 'Done' && isWorkerInRenewalWindow(worker) ? (
+                    {(worker.acknowledgement === 'Agree' && (worker.fomemaStatus === 'Suitable' || ['Applied', 'Application Approved', 'Payment Request', 'Pending payment', 'Payment Done', 'Collected'].includes(worker.plksStatus as string) || worker.plksPaymentApproved) && worker.insurancePurchase === 'Done' && (isWorkerInRenewalWindow(worker) || worker.plksStatus === 'Collected')) ? (
                       <div className="flex flex-col items-center">
                         <select
                           value={worker.insurancePayment || ''}
                           onChange={(e) => updateWorkerField(worker, 'insurancePayment', e.target.value)}
-                          disabled={(worker.insurancePaymentApproved && (worker.insurancePayment as string) !== 'Refund') || (worker.fomemaStatus !== 'Suitable' && worker.plksStatus !== 'Applied') || worker.insurancePurchase !== 'Done' || (worker.insurancePayment === 'Refund' && !worker.insuranceRefundApproved)}
+                          disabled={(worker.insurancePaymentApproved && (worker.insurancePayment as string) !== 'Refund') || (worker.fomemaStatus !== 'Suitable' && !['Applied', 'Application Approved', 'Payment Request', 'Pending payment', 'Payment Done', 'Collected'].includes(worker.plksStatus as string) && !worker.plksPaymentApproved) || worker.insurancePurchase !== 'Done' || (worker.insurancePayment === 'Refund' && !worker.insuranceRefundApproved)}
                           className={`bg-transparent border-none focus:ring-0 text-[13px] text-slate-600 cursor-pointer hover:bg-slate-50 rounded px-1 w-full text-center ${worker.insurancePaymentApproved || (worker.insurancePayment === 'Refund' && !worker.insuranceRefundApproved) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <option value="">Select</option>

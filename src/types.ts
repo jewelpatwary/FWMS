@@ -34,6 +34,11 @@ export interface LetterTemplate {
   updatedAt: string;
 }
 
+export interface AppearanceSettings {
+  fontSize: string;
+  fontFamily: string;
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -42,6 +47,7 @@ export interface UserProfile {
   role: UserRole;
   permissions?: UserPermissions;
   signature?: SignatureSettings;
+  appearance?: AppearanceSettings;
   createdAt: string;
 }
 
@@ -70,7 +76,7 @@ export interface Worker {
   resignDate?: string;
   status: 'Active' | 'Inactive' | 'Holiday';
   acknowledgement?: 'Agree' | 'Request COM' | 'OverStay' | '';
-  fomemaStatus?: 'Payment Request' | 'Payment Done' | 'Payment Re-Request' | 'Purchased' | 'Clinic Booked' | 'Pending examination' | 'Review' | 'Pending for certification' | 'Suitable' | 'Unsuitable' | 'Refund' | 'Other' | '';
+  fomemaStatus?: 'Payment Request' | 'Payment Done' | 'Payment Re-Request' | 'Purchased' | 'Clinic Booked' | 'Pending examination' | 'Review' | 'Pending for certification' | 'Suitable' | 'Unsuitable' | 'Refund' | 'Other' | '-' | '';
   fomemaReRequestReason?: string;
   insurancePurchase?: 'Purchased' | 'Payment Request' | 'Payment Done' | 'Payment Re-Request' | 'Blank' | 'Done' | 'Refund' | '';
   plksStatus?: 'Applied' | 'Application Approved' | 'Payment Request' | 'Pending payment' | 'Payment Done' | 'Payment Re-Request' | 'Collected' | 'Refund' | 'Payment Approved' | '';
@@ -111,9 +117,9 @@ export interface Worker {
   fomemaRefundReason?: string;
   insuranceRefundReason?: string;
   plksRefundReason?: string;
-  fomemaPayment?: 'Payment Request' | 'Payment Done' | 'Payment Re-Request' | 'Refund' | '';
+  fomemaPayment?: 'Payment Request' | 'Payment Done' | 'Payment Re-Request' | 'Refund' | '-' | '';
   insurancePayment?: 'Payment Request' | 'Payment Done' | 'Payment Re-Request' | 'Refund' | '';
-  plksPayment?: 'Payment Request' | 'Payment Done' | 'Payment Re-Request' | 'Refund' | 'Payment Approved' | '';
+  plksPayment?: 'Payment Request' | 'Payment Done' | 'Payment Re-Request' | 'Refund' | 'Payment Approved' | '-' | '';
   createdAt: string;
   updatedAt: string;
 }
