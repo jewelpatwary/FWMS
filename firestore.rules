@@ -1,0 +1,253 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - displayName: string (optional)
+    //   - role: string (required, enum: admin, hr, viewer, super_admin)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: workers
+    // Fields:
+    //   - workerId: string (required)
+    //   - fullName: string (required)
+    //   - oldPassport: string (optional)
+    //   - newPassport: string (required)
+    //   - passportExpiry: string (optional, date format)
+    //   - permitExpiry: string (optional, date format)
+    //   - permitYear: string (optional)
+    //   - permitHolder: string (optional)
+    //   - managedBy: string (optional)
+    //   - dob: string (optional, date format)
+    //   - gender: string (optional)
+    //   - nationality: string (required)
+    //   - socsoNo: string (optional)
+    //   - epfNo: string (optional)
+    //   - remark: string (optional)
+    //   - clientId: string (optional)
+    //   - currentClientJoinDate: string (optional, date format)
+    //   - currentClientTerminationDate: string (optional, date format)
+    //   - workLocation: string (optional)
+    //   - joinDate: string (optional, date format)
+    //   - resignDate: string (optional, date format)
+    //   - status: string (required, enum: Active, Inactive)
+    //   - espExpiry: string (optional, date format)
+    //   - createdAt: timestamp (required)
+    //   - updatedAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        ('email' in request.auth.token && request.auth.token.email == "jewelpatwary1994@gmail.com") ||
+        ('email' in request.auth.token && request.auth.token.email == "superadmin@fwms.com") ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'))
+      );
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        ('email' in request.auth.token && request.auth.token.email == "jewelpatwary1994@gmail.com") ||
+        ('email' in request.auth.token && request.auth.token.email == "superadmin@fwms.com") ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin')
+      );
+    }
+
+    function isHR() {
+      return isAuthenticated() && (
+        isAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'hr')
+      );
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidGlobalSettings(data) {
+      return hasRequiredFields(['insuranceAutoUpdate']) &&
+             data.insuranceAutoUpdate is bool;
+    }
+
+    // Domain Validators
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['admin', 'hr', 'viewer', 'super_admin'];
+    }
+
+    function isValidWorker(data) {
+      return hasRequiredFields(['workerId', 'fullName', 'newPassport', 'nationality', 'status']) &&
+             data.workerId is string && data.workerId.size() > 0 &&
+             data.fullName is string && data.fullName.size() > 0 &&
+             data.newPassport is string && data.newPassport.size() > 0 &&
+             data.nationality is string &&
+             data.status in ['Active', 'Inactive'];
+    }
+
+    function isValidPermitHolder(data) {
+      return hasRequiredFields(['name']) &&
+             data.name is string && data.name.size() > 0;
+    }
+
+    function isValidClient(data) {
+      return hasRequiredFields(['name']) &&
+             data.name is string && data.name.size() > 0;
+    }
+
+    function isValidCompany(data) {
+      return hasRequiredFields(['name']) &&
+             data.name is string && data.name.size() > 0;
+    }
+
+    function isValidPermit(data) {
+      return hasRequiredFields(['workerId', 'expiryDate']) &&
+             data.workerId is string &&
+             data.expiryDate is string;
+    }
+
+    function isValidPassport(data) {
+      return hasRequiredFields(['workerId', 'passportNo', 'expiryDate']) &&
+             data.workerId is string &&
+             data.passportNo is string &&
+             data.expiryDate is string;
+    }
+
+    function isValidLetterTemplate(data) {
+      return hasRequiredFields(['name', 'content']) &&
+             data.name is string && data.name.size() > 0 &&
+             data.content is string && data.content.size() > 0 &&
+             ( !('chopPosition' in data) || (data.chopPosition is map) ) &&
+             ( !('signaturePosition' in data) || (data.signaturePosition is map) );
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == 'viewer') || isAdmin();
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /workers/{workerId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isHR() && isValidWorker(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /clients/{clientId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isHR() && isValidClient(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /companies/{companyId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isHR() && isValidCompany(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /permits/{permitId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isHR() && isValidPermit(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /passports/{passportId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isHR() && isValidPassport(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /permit_holders/{permitHolderId} {
+      allow read, list: if isAuthenticated();
+      allow create, update: if isHR() && isValidPermitHolder(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /custom_fields/{fieldId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /worker_custom_values/{valueId} {
+      allow read: if isAuthenticated();
+      allow write: if isHR();
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+    
+    match /payment_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /placement_history/{historyId} {
+      allow read: if isAuthenticated();
+      allow create: if isHR();
+      allow delete: if isAdmin();
+      allow update: if false;
+    }
+
+    match /esp_history/{historyId} {
+      allow read: if isAuthenticated();
+      allow create: if isHR();
+      allow update, delete: if false;
+    }
+
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidGlobalSettings(request.resource.data);
+      allow update: if isAdmin() && isValidGlobalSettings(request.resource.data) &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['insuranceAutoUpdate', 'updatedAt']);
+    }
+
+    match /letter_templates/{templateId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && isValidLetterTemplate(request.resource.data);
+      allow delete: if request.auth != null;
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

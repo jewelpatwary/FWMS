@@ -1,0 +1,314 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user with role-based access control",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "hr", "viewer", "super_admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Worker": {
+      "title": "Worker",
+      "description": "Foreign worker master data",
+      "type": "object",
+      "properties": {
+        "workerId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "oldPassport": { "type": "string" },
+        "newPassport": { "type": "string" },
+        "passportExpiry": { "type": "string", "format": "date" },
+        "permitExpiry": { "type": "string", "format": "date" },
+        "permitYear": { "type": "string" },
+        "permitHolder": { "type": "string" },
+        "managedBy": { "type": "string" },
+        "dob": { "type": "string", "format": "date" },
+        "gender": { "type": "string" },
+        "nationality": { "type": "string" },
+        "socsoNo": { "type": "string" },
+        "epfNo": { "type": "string" },
+        "remark": { "type": "string" },
+        "clientId": { "type": "string" },
+        "currentClientJoinDate": { "type": "string", "format": "date" },
+        "currentClientTerminationDate": { "type": "string", "format": "date" },
+        "workLocation": { "type": "string" },
+        "joinDate": { "type": "string", "format": "date" },
+        "resignDate": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["Active", "Inactive"] },
+        "espExpiry": { "type": "string", "format": "date" },
+        "acknowledgement": { "type": "string" },
+        "fomemaPayment": { "type": "string" },
+        "fomemaStatus": { "type": "string" },
+        "fomemaPaymentApproved": { "type": "boolean" },
+        "fomemaPaymentApprovedBy": { "type": "string" },
+        "fomemaPaymentApprovedAt": { "type": "string" },
+        "fomemaPaymentRequestedBy": { "type": "string" },
+        "fomemaPaymentRequestedAt": { "type": "string" },
+        "fomemaReRequestReason": { "type": "string" },
+        "fomemaRefundRequestedBy": { "type": "string" },
+        "fomemaRefundRequestedAt": { "type": "string" },
+        "fomemaRefundReason": { "type": "string" },
+        "fomemaRefundApproved": { "type": "boolean" },
+        "fomemaRefundApprovedBy": { "type": "string" },
+        "fomemaRefundApprovedAt": { "type": "string" },
+        "insurancePurchase": { "type": "string" },
+        "insurancePayment": { "type": "string" },
+        "insurancePaymentApproved": { "type": "boolean" },
+        "insurancePaymentApprovedBy": { "type": "string" },
+        "insurancePaymentApprovedAt": { "type": "string" },
+        "insurancePaymentRequestedBy": { "type": "string" },
+        "insurancePaymentRequestedAt": { "type": "string" },
+        "insuranceRefundRequestedBy": { "type": "string" },
+        "insuranceRefundRequestedAt": { "type": "string" },
+        "insuranceRefundReason": { "type": "string" },
+        "insuranceRefundApproved": { "type": "boolean" },
+        "insuranceRefundApprovedBy": { "type": "string" },
+        "insuranceRefundApprovedAt": { "type": "string" },
+        "plksStatus": { "type": "string" },
+        "plksPayment": { "type": "string" },
+        "plksPaymentApproved": { "type": "boolean" },
+        "plksPaymentApprovedBy": { "type": "string" },
+        "plksPaymentApprovedAt": { "type": "string" },
+        "plksPaymentRequestedBy": { "type": "string" },
+        "plksPaymentRequestedAt": { "type": "string" },
+        "plksRefundRequestedBy": { "type": "string" },
+        "plksRefundRequestedAt": { "type": "string" },
+        "plksRefundReason": { "type": "string" },
+        "plksRefundApproved": { "type": "boolean" },
+        "plksRefundApprovedBy": { "type": "string" },
+        "plksRefundApprovedAt": { "type": "string" },
+        "comApply": { "type": "string" },
+        "comStatus": { "type": "string" },
+        "comRequestDate": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["workerId", "fullName", "newPassport", "nationality", "status"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Client details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "regNum": { "type": "string" },
+        "address": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "contactEmail": { "type": "string", "format": "email" },
+        "contactPhone": { "type": "string" },
+        "picName": { "type": "string" },
+        "picPhone": { "type": "string" },
+        "picEmail": { "type": "string", "format": "email" }
+      },
+      "required": ["name"]
+    },
+    "PermitHolder": {
+      "title": "PermitHolder",
+      "description": "Permit holder details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "regNum": { "type": "string" },
+        "address": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "contactEmail": { "type": "string", "format": "email" },
+        "contactPhone": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
+    },
+    "Company": {
+      "title": "Company",
+      "description": "Company details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "contactEmail": { "type": "string", "format": "email" },
+        "contactPhone": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Permit": {
+      "title": "Permit",
+      "description": "Worker permit (PLKS/Visa) tracking",
+      "type": "object",
+      "properties": {
+        "workerId": { "type": "string" },
+        "permitType": { "type": "string" },
+        "permitNumber": { "type": "string" },
+        "issueDate": { "type": "string", "format": "date" },
+        "expiryDate": { "type": "string", "format": "date" },
+        "levyPaid": { "type": "number" },
+        "status": { "type": "string" },
+        "documentUrl": { "type": "string" }
+      },
+      "required": ["workerId", "permitNumber", "expiryDate"]
+    },
+    "Passport": {
+      "title": "Passport",
+      "description": "Worker passport tracking",
+      "type": "object",
+      "properties": {
+        "workerId": { "type": "string" },
+        "passportNumber": { "type": "string" },
+        "issueDate": { "type": "string", "format": "date" },
+        "expiryDate": { "type": "string", "format": "date" },
+        "documentUrl": { "type": "string" }
+      },
+      "required": ["workerId", "passportNumber", "expiryDate"]
+    },
+    "CustomField": {
+      "title": "CustomField",
+      "description": "Dynamic custom columns for workers",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "dataType": { "type": "string", "enum": ["text", "number", "date", "dropdown"] },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "defaultValue": { "type": "string" },
+        "isVisible": { "type": "boolean" }
+      },
+      "required": ["name", "dataType"]
+    },
+    "WorkerCustomValue": {
+      "title": "WorkerCustomValue",
+      "description": "Values for dynamic custom columns",
+      "type": "object",
+      "properties": {
+        "workerId": { "type": "string" },
+        "fieldId": { "type": "string" },
+        "value": { "type": "string" }
+      },
+      "required": ["workerId", "fieldId", "value"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Tracks changes to worker data",
+      "type": "object",
+      "properties": {
+        "workerId": { "type": "string" },
+        "changedBy": { "type": "string" },
+        "changedByName": { "type": "string" },
+        "changeType": { "type": "string", "enum": ["personal", "status", "custom_field"] },
+        "fieldName": { "type": "string" },
+        "oldValue": { "type": "string" },
+        "newValue": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["workerId", "changedBy", "changeType", "fieldName", "timestamp"]
+    },
+    "PlacementHistory": {
+      "title": "PlacementHistory",
+      "description": "Tracks worker working place history",
+      "type": "object",
+      "properties": {
+        "workerId": { "type": "string" },
+        "workerName": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "joinDate": { "type": "string", "format": "date" },
+        "terminationDate": { "type": "string", "format": "date" },
+        "remark": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["workerId", "clientId", "joinDate", "createdAt"]
+    },
+    "ESPHistory": {
+      "title": "ESPHistory",
+      "description": "Tracks eSP expiry updates",
+      "type": "object",
+      "properties": {
+        "workerId": { "type": "string" },
+        "workerName": { "type": "string" },
+        "expiryDate": { "type": "string", "format": "date" },
+        "updatedBy": { "type": "string" },
+        "updatedByName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["workerId", "expiryDate", "createdAt"]
+    },
+    "GlobalSettings": {
+      "title": "GlobalSettings",
+      "description": "System-wide global settings",
+      "type": "object",
+      "properties": {
+        "insuranceAutoUpdate": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "LetterTemplate": {
+      "title": "LetterTemplate",
+      "description": "Templates for generated letters",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "content": { "type": "string" },
+        "letterheadUrl": { "type": "string" },
+        "chopUrl": { "type": "string" },
+        "chopPosition": { 
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        },
+        "signatureUrl": { "type": "string" },
+        "signaturePosition": { 
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "content"]
+    },
+    "PaymentLog": {
+      "title": "PaymentLog",
+      "description": "Tracks payment approvals and resets",
+      "type": "object",
+      "properties": {
+        "workerId": { "type": "string" },
+        "workerName": { "type": "string" },
+        "type": { "type": "string" },
+        "action": { "type": "string" },
+        "performedBy": { "type": "string" },
+        "performedByUid": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "details": { "type": "string" },
+        "reason": { "type": "string" },
+        "requestedBy": { "type": "string" },
+        "requestedAt": { "type": "string" }
+      },
+      "required": ["workerId", "workerName", "type", "action", "performedBy", "performedByUid", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users": { "schema": "User", "description": "System users" },
+    "/workers": { "schema": "Worker", "description": "Foreign workers" },
+    "/clients": { "schema": "Client", "description": "Clients" },
+    "/companies": { "schema": "Company", "description": "Companies" },
+    "/permits": { "schema": "Permit", "description": "Permit records" },
+    "/passports": { "schema": "Passport", "description": "Passport records" },
+    "/permit_holders": { "schema": "PermitHolder", "description": "Permit holders" },
+    "/custom_fields": { "schema": "CustomField", "description": "Dynamic field definitions" },
+    "/worker_custom_values": { "schema": "WorkerCustomValue", "description": "Values for dynamic fields" },
+    "/audit_logs": { "schema": "AuditLog", "description": "Audit logs for worker changes" },
+    "/payment_logs": { "schema": "PaymentLog", "description": "Payment approval and reset history" },
+    "/placement_history": { "schema": "PlacementHistory", "description": "Worker placement history records" },
+    "/esp_history": { "schema": "ESPHistory", "description": "eSP expiry history records" },
+    "/settings": { "schema": "GlobalSettings", "description": "Global system settings" },
+    "/letter_templates": { "schema": "LetterTemplate", "description": "Templates for generated letters" }
+  }
+}
